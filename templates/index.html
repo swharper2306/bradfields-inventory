@@ -38,3 +38,44 @@
     </table>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bradfields Inventory</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Bradfields Inventory System</h1>
+
+    <form action="/add" method="post">
+        <input type="text" name="item_name" placeholder="Item Name" required>
+        <input type="text" name="location" placeholder="Location" required>
+        <input type="number" name="quantity" placeholder="Qty" required min="1">
+        <button type="submit">Add Item</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item Name</th><th>Location</th><th>Quantity</th><th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item[1] }}</td>
+                <td>{{ item[2] }}</td>
+                <td>{{ item[3] }}</td>
+                <td>
+                    <form action="/delete/{{ item[0] }}" method="post" style="display:inline;">
+                        <button type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
