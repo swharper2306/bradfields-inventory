@@ -52,7 +52,6 @@ def delete_item(item_id):
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
-=======
 from flask import Flask, render_template, request, redirect, jsonify
 import sqlite3
 import os
