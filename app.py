@@ -77,6 +77,25 @@ def edit_item(item_id):
         conn.close()
         return redirect("/")
 
+@app.route('/scan_update', methods=['POST'])
+def scan_update():
+    barcode = request.form['barcode']
+    action = request.form['action']  # "add" or "subtract"
+
+    conn = sqlite3.connect('inventory.db')
+    c = conn.cursor()
+    c.execute("SELECT quantity FROM inventory WHERE barcode = ?", (barcode,))
+    result = c.fetchone()
+
+    if result:
+        current_qty = result[0]
+        new_qty = current_qty + 1 if action == 'add' else max(current_qty - 1, 0)
+        c.execute("UPDATE inventory SET quantity = ? WHERE barcode = ?", (new_qty, barcode))
+        conn.commit()
+
+    conn.close()
+    return redirect('/')
+
     cursor.execute("SELECT * FROM inventory WHERE id = ?", (item_id,))
     item = cursor.fetchone()
     conn.close()
