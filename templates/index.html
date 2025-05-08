@@ -80,6 +80,15 @@
             rows[i].style.display = match ? "" : "none";
         }
     }
-    </script>
+
+// Auto-submit the scan form when barcode input is filled
+document.getElementById('barcodeInput').addEventListener('input', function(e) {
+    if (this.value.length >= 3) {  // Adjust as needed based on barcode length
+        setTimeout(() => {
+            document.getElementById('scanForm').submit();
+        }, 100); // Delay helps capture full scan before submit
+    }
+});
+</script>
 </body>
 </html>
