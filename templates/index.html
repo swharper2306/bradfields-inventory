@@ -8,13 +8,13 @@
 <body>
     <h1>Bradfields Inventory System</h1>
 
-<form action="/add" method="post">
-    <input type="text" name="item_name" placeholder="Item Name" required>
-    <input type="text" name="location" placeholder="Location" required>
-    <input type="number" name="quantity" placeholder="Qty" required min="1">
-    <input type="text" name="barcode" placeholder="Barcode (Scan or Type)" required>
-    <button type="submit">Add Item</button>
-</form>
+    <form action="/add" method="post">
+        <input type="text" name="item_name" placeholder="Item Name" required>
+        <input type="text" name="location" placeholder="Location" required>
+        <input type="number" name="quantity" placeholder="Qty" required min="1">
+        <input type="text" name="barcode" placeholder="Barcode (Scan or Type)" required>
+        <button type="submit">Add Item</button>
+    </form>
 
     <input type="text" id="searchInput" placeholder="Search inventory..." onkeyup="filterTable()" style="margin: 20px 0; padding: 8px; width: 300px;">
 
@@ -24,6 +24,7 @@
                 <th>Item Name</th>
                 <th>Location</th>
                 <th>Quantity</th>
+                <th>Barcode</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -33,6 +34,7 @@
                 <td>{{ item[1] }}</td>
                 <td>{{ item[2] }}</td>
                 <td>{{ item[3] }}</td>
+                <td>{{ item[4] or '' }}</td>
                 <td>
                     <form action="/delete/{{ item[0] }}" method="post" style="display:inline;">
                         <button type="submit">Delete</button>
@@ -45,25 +47,25 @@
 
     <script>
     function filterTable() {
-      const input = document.getElementById("searchInput");
-      const filter = input.value.toLowerCase();
-      const table = document.getElementById("inventoryTable");
-      const rows = table.getElementsByTagName("tr");
+        const input = document.getElementById("searchInput");
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById("inventoryTable");
+        const rows = table.getElementsByTagName("tr");
 
-      for (let i = 1; i < rows.length; i++) {
-        const cells = rows[i].getElementsByTagName("td");
-        let match = false;
+        for (let i = 1; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName("td");
+            let match = false;
 
-        for (let j = 0; j < cells.length; j++) {
-          const text = cells[j].textContent || cells[j].innerText;
-          if (text.toLowerCase().indexOf(filter) > -1) {
-            match = true;
-            break;
-          }
+            for (let j = 0; j < cells.length; j++) {
+                const text = cells[j].textContent || cells[j].innerText;
+                if (text.toLowerCase().indexOf(filter) > -1) {
+                    match = true;
+                    break;
+                }
+            }
+
+            rows[i].style.display = match ? "" : "none";
         }
-
-        rows[i].style.display = match ? "" : "none";
-      }
     }
     </script>
 </body>
