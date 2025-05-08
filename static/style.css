@@ -28,6 +28,8 @@ th, td {
     border: 1px solid #ddd;
     text-align: left;
 }
+
+4d07586 (Updated barcode support in HTML and app logic)
 body {
     font-family: Arial, sans-serif;
     padding: 20px;
