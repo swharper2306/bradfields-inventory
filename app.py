@@ -9,7 +9,6 @@ def init_db():
     conn = sqlite3.connect('inventory.db')
     c = conn.cursor()
 
-    # Create the table if it doesn't exist
     c.execute('''CREATE TABLE IF NOT EXISTS inventory (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     item_name TEXT NOT NULL,
@@ -18,11 +17,10 @@ def init_db():
                     barcode TEXT
                 )''')
 
-    # Add the barcode column if it was missing before
     try:
         c.execute("ALTER TABLE inventory ADD COLUMN barcode TEXT")
     except sqlite3.OperationalError:
-        pass  # Ignore error if column already exists
+        pass
 
     conn.commit()
     conn.close()
@@ -60,30 +58,6 @@ def delete_item(item_id):
     conn.close()
     return redirect('/')
     
-@app.route("/edit/<int:item_id>", methods=["GET", "POST"])
-def edit_item(item_id):
-    conn = sqlite3.connect("inventory.db")
-    cursor = conn.cursor()
-
-    if request.method == "POST":
-        item_name = request.form["item_name"]
-        location = request.form["location"]
-        quantity = int(request.form["quantity"])
-        barcode = request.form["barcode"]
-
-        cursor.execute(
-            "UPDATE inventory SET item_name = ?, location = ?, quantity = ?, barcode = ? WHERE id = ?",
-            (item_name, location, quantity, barcode, item_id),
-        )
-        conn.commit()
-        conn.close()
-        return redirect("/")
-
-    cursor.execute("SELECT * FROM inventory WHERE id = ?", (item_id,))
-    item = cursor.fetchone()
-    conn.close()
-    return render_template("edit.html", item=item)
-
 @app.route("/edit/<int:item_id>", methods=["GET", "POST"])
 def edit_item(item_id):
     conn = sqlite3.connect("inventory.db")
