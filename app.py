@@ -84,6 +84,30 @@ def edit_item(item_id):
     conn.close()
     return render_template("edit.html", item=item)
 
+@app.route("/edit/<int:item_id>", methods=["GET", "POST"])
+def edit_item(item_id):
+    conn = sqlite3.connect("inventory.db")
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+        item_name = request.form["item_name"]
+        location = request.form["location"]
+        quantity = int(request.form["quantity"])
+        barcode = request.form["barcode"]
+
+        cursor.execute(
+            "UPDATE inventory SET item_name = ?, location = ?, quantity = ?, barcode = ? WHERE id = ?",
+            (item_name, location, quantity, barcode, item_id),
+        )
+        conn.commit()
+        conn.close()
+        return redirect("/")
+
+    cursor.execute("SELECT * FROM inventory WHERE id = ?", (item_id,))
+    item = cursor.fetchone()
+    conn.close()
+    return render_template("edit.html", item=item)
+
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
