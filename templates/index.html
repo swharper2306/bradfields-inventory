@@ -16,6 +16,16 @@
         <button type="submit">Add Item</button>
     </form>
 
+<h2>Quick Scan Update</h2>
+<form id="scanForm" action="/scan_update" method="POST">
+    <input type="text" name="barcode" id="barcodeInput" placeholder="Scan barcode here..." autofocus required>
+    <select name="action" id="actionSelect">
+        <option value="add">Add One</option>
+        <option value="subtract">Subtract One</option>
+    </select>
+    <button type="submit" style="display:none;">Submit</button>
+</form>
+
     <input type="text" id="searchInput" placeholder="Search inventory..." onkeyup="filterTable()" style="margin: 20px 0; padding: 8px; width: 300px;">
 
     <table id="inventoryTable">
