@@ -36,10 +36,13 @@
                 <td>{{ item[3] }}</td>
                 <td>{{ item[4] or '' }}</td>
                 <td>
-                    <form action="/delete/{{ item[0] }}" method="post" style="display:inline;">
-                        <button type="submit">Delete</button>
-                    </form>
-                </td>
+    <form action="/delete/{{ item[0] }}" method="post" style="display:inline;">
+        <button type="submit">Delete</button>
+    </form>
+    <form action="/edit/{{ item[0] }}" method="get" style="display:inline;">
+        <button type="submit">Edit</button>
+    </form>
+</td>
             </tr>
             {% endfor %}
         </tbody>
