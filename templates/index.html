@@ -59,34 +59,36 @@
     </table>
 
     <script>
-    function filterTable() {
-        const input = document.getElementById("searchInput");
-        const filter = input.value.toLowerCase();
-        const table = document.getElementById("inventoryTable");
-        const rows = table.getElementsByTagName("tr");
+function filterTable() {
+    const input = document.getElementById("searchInput");
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById("inventoryTable");
+    const rows = table.getElementsByTagName("tr");
 
-        for (let i = 1; i < rows.length; i++) {
-            const cells = rows[i].getElementsByTagName("td");
-            let match = false;
+    for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName("td");
+        let match = false;
 
-            for (let j = 0; j < cells.length; j++) {
-                const text = cells[j].textContent || cells[j].innerText;
-                if (text.toLowerCase().indexOf(filter) > -1) {
-                    match = true;
-                    break;
-                }
+        for (let j = 0; j < cells.length; j++) {
+            const text = cells[j].textContent || cells[j].innerText;
+            if (text.toLowerCase().indexOf(filter) > -1) {
+                match = true;
+                break;
             }
-
-            rows[i].style.display = match ? "" : "none";
         }
+
+        rows[i].style.display = match ? "" : "none";
     }
+}
 
 // Auto-submit the scan form when barcode input is filled
 document.getElementById('barcodeInput').addEventListener('input', function(e) {
-    if (this.value.length >= 3) {  // Adjust as needed based on barcode length
+    if (this.value.length >= 3) {  // Adjust based on your barcode length
+        const form = document.getElementById('scanForm');
         setTimeout(() => {
-            document.getElementById('scanForm').submit();
-        }, 100); // Delay helps capture full scan before submit
+            this.value = ''; // Clear the input just before submitting
+            form.submit();
+        }, 100); // Delay ensures full barcode is captured before submit
     }
 });
 </script>
