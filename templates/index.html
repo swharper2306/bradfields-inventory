@@ -8,12 +8,13 @@
 <body>
     <h1>Bradfields Inventory System</h1>
 
-    <form action="/add" method="post">
-        <input type="text" name="item_name" placeholder="Item Name" required>
-        <input type="text" name="location" placeholder="Location" required>
-        <input type="number" name="quantity" placeholder="Qty" required min="1">
-        <button type="submit">Add Item</button>
-    </form>
+<form action="/add" method="post">
+    <input type="text" name="item_name" placeholder="Item Name" required>
+    <input type="text" name="location" placeholder="Location" required>
+    <input type="number" name="quantity" placeholder="Qty" required min="1">
+    <input type="text" name="barcode" placeholder="Barcode (Scan or Type)" required>
+    <button type="submit">Add Item</button>
+</form>
 
     <input type="text" id="searchInput" placeholder="Search inventory..." onkeyup="filterTable()" style="margin: 20px 0; padding: 8px; width: 300px;">
 
