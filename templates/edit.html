@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Item</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Edit Inventory Item</h1>
+
+    <form action="/edit/{{ item[0] }}" method="post">
+        <input type="text" name="item_name" value="{{ item[1] }}" required>
+        <input type="text" name="location" value="{{ item[2] }}" required>
+        <input type="number" name="quantity" value="{{ item[3] }}" required min="0">
+        <input type="text" name="barcode" value="{{ item[4] }}" required>
+        <button type="submit">Update Item</button>
+    </form>
+
+    <br>
+    <a href="/">← Back to Inventory</a>
+</body>
+</html>
