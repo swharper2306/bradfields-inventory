@@ -11,14 +11,10 @@
             border-radius: 5px;
             display: none;
         }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .highlight { background-color: yellow; transition: background-color 1s ease; }
+        th { cursor: pointer; }
     </style>
 </head>
 <body>
@@ -49,10 +45,10 @@
     <table id="inventoryTable">
         <thead>
             <tr>
-                <th>Item Name</th>
-                <th>Location</th>
-                <th>Quantity</th>
-                <th>Barcode</th>
+                <th onclick="sortTable(0)">Item Name</th>
+                <th onclick="sortTable(1)">Location</th>
+                <th onclick="sortTable(2)">Quantity</th>
+                <th onclick="sortTable(3)">Barcode</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -77,29 +73,36 @@
     </table>
 
 <script>
+// Search filter
 function filterTable() {
-    const input = document.getElementById("searchInput");
-    const filter = input.value.toLowerCase();
-    const table = document.getElementById("inventoryTable");
-    const rows = table.getElementsByTagName("tr");
-
-    for (let i = 1; i < rows.length; i++) {
-        const cells = rows[i].getElementsByTagName("td");
-        let match = false;
-
-        for (let j = 0; j < cells.length; j++) {
-            const text = cells[j].textContent || cells[j].innerText;
-            if (text.toLowerCase().indexOf(filter) > -1) {
-                match = true;
-                break;
-            }
-        }
-
-        rows[i].style.display = match ? "" : "none";
-    }
+    const filter = document.getElementById("searchInput").value.toLowerCase();
+    const rows = document.querySelectorAll("#inventoryTable tbody tr");
+    rows.forEach(row => {
+        row.style.display = [...row.cells].some(td => td.textContent.toLowerCase().includes(filter)) ? "" : "none";
+    });
 }
 
-// Display success or error messages
+// Sort table columns
+let sortDirection = true;
+function sortTable(colIndex) {
+    const table = document.getElementById("inventoryTable");
+    const tbody = table.tBodies[0];
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+
+    rows.sort((a, b) => {
+        const aText = a.cells[colIndex].textContent.trim().toLowerCase();
+        const bText = b.cells[colIndex].textContent.trim().toLowerCase();
+        const aVal = isNaN(aText) ? aText : parseFloat(aText);
+        const bVal = isNaN(bText) ? bText : parseFloat(bText);
+
+        return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * (sortDirection ? 1 : -1);
+    });
+
+    sortDirection = !sortDirection;
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Show flash messages
 function showMessage(message, isSuccess = true) {
     const box = document.getElementById("messageBox");
     box.textContent = message;
@@ -108,7 +111,7 @@ function showMessage(message, isSuccess = true) {
     setTimeout(() => box.style.display = "none", 2500);
 }
 
-// Handle AJAX scan form submission
+// AJAX scan form
 document.getElementById("scanForm").addEventListener("submit", function (e) {
     e.preventDefault();
     const barcode = document.getElementById("barcodeInput").value;
@@ -122,24 +125,24 @@ document.getElementById("scanForm").addEventListener("submit", function (e) {
     .then(res => res.json())
     .then(data => {
         if (data.status === "success") {
-            // Update quantity in table
             const row = document.querySelector(`tr[data-barcode="${barcode}"]`);
             if (row) {
-                row.querySelector(".quantity-cell").textContent = data.quantity;
+                const qtyCell = row.querySelector(".quantity-cell");
+                qtyCell.textContent = data.quantity;
+                row.classList.add("highlight");
+                setTimeout(() => row.classList.remove("highlight"), 1500);
             }
             showMessage(`Quantity ${action}ed. New quantity: ${data.quantity}`, true);
         } else {
             showMessage(data.message, false);
         }
     })
-    .catch(err => {
-        showMessage("Error communicating with server.", false);
-    });
+    .catch(() => showMessage("Error communicating with server.", false));
 
     document.getElementById("barcodeInput").value = "";
 });
 
-// Auto-submit when barcode is scanned
+// Auto-submit on scan input
 document.getElementById("barcodeInput").addEventListener("input", function () {
     if (this.value.length >= 3) {
         document.getElementById("scanForm").dispatchEvent(new Event("submit"));
