@@ -79,25 +79,21 @@ def edit_item(item_id):
 @app.route('/scan_update', methods=['POST'])
 def scan_update():
     data = request.get_json()
-    barcode = data.get('barcode', '').strip()  # Ensure trailing whitespace is removed
-    action = data.get('action')  # "add" or "subtract"
+    barcode = data.get('barcode', '').strip()
+    action = data.get('action')
 
-    conn = get_db_connection()
-    c = conn.cursor()
-    c.execute("SELECT quantity FROM inventory WHERE barcode = ?", (barcode,))
-    result = c.fetchone()
+    with get_db_cursor(commit=True) as c:
+        c.execute("SELECT quantity FROM inventory WHERE barcode = ?", (barcode,))
+        result = c.fetchone()
 
-    if result:
-        current_qty = result[0]
-        new_qty = current_qty + 1 if action == 'add' else max(current_qty - 1, 0)
-        c.execute("UPDATE inventory SET quantity = ? WHERE barcode = ?", (new_qty, barcode))
-        conn.commit()
-        conn.close()
-        return jsonify({'status': 'success', 'quantity': new_qty})
-    else:
-        conn.close()
-        return jsonify({'status': 'error', 'message': 'Barcode not found'})
-        
+        if result:
+            current_qty = result[0]
+            new_qty = current_qty + 1 if action == 'add' else max(current_qty - 1, 0)
+            c.execute("UPDATE inventory SET quantity = ? WHERE barcode = ?", (new_qty, barcode))
+            return jsonify({'status': 'success', 'quantity': new_qty})
+        else:
+            return jsonify({'status': 'error', 'message': 'Barcode not found'})
+
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
