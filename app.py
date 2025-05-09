@@ -89,19 +89,19 @@ def scan_update():
 
     conn = sqlite3.connect('inventory.db')
     c = conn.cursor()
-    c.execute("SELECT quantity FROM inventory WHERE barcode = ?", (barcode,))
+    c.execute("SELECT id, quantity FROM inventory WHERE barcode = ?", (barcode,))
     result = c.fetchone()
 
     if result:
-        current_qty = result[0]
+        item_id, current_qty = result
         new_qty = current_qty + 1 if action == 'add' else max(current_qty - 1, 0)
         c.execute("UPDATE inventory SET quantity = ? WHERE barcode = ?", (new_qty, barcode))
         conn.commit()
         conn.close()
-        return jsonify({'status': 'success', 'quantity': new_qty})
+        return jsonify(success=True, message=f"{action.capitalize()} successful", item_id=item_id, new_qty=new_qty)
     else:
         conn.close()
-        return jsonify({'status': 'error', 'message': 'Barcode not found'})
+        return jsonify(success=False, message="Barcode not found.")
 
 if __name__ == '__main__':
     init_db()
