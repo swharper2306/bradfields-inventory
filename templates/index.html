@@ -17,7 +17,7 @@
     </form>
 
     <h2>Quick Scan Update</h2>
-    <form id="scanForm" method="POST">
+    <form id="scanForm">
         <input type="text" name="barcode" id="barcodeInput" placeholder="Scan barcode here..." autofocus required>
         <select name="action" id="actionSelect">
             <option value="add">Add One</option>
@@ -25,6 +25,8 @@
         </select>
         <button type="submit" style="display:none;">Submit</button>
     </form>
+
+    <div id="scanMessage" style="margin-top:10px; font-weight:bold;"></div>
 
     <input type="text" id="searchInput" placeholder="Search inventory..." onkeyup="filterTable()" style="margin: 20px 0; padding: 8px; width: 300px;">
 
@@ -40,10 +42,10 @@
         </thead>
         <tbody>
             {% for item in items %}
-            <tr>
+            <tr data-id="{{ item[0] }}">
                 <td>{{ item[1] }}</td>
                 <td>{{ item[2] }}</td>
-                <td>{{ item[3] }}</td>
+                <td class="qty">{{ item[3] }}</td>
                 <td>{{ item[4] or '' }}</td>
                 <td>
                     <form action="/delete/{{ item[0] }}" method="post" style="display:inline;">
@@ -68,7 +70,6 @@
         for (let i = 1; i < rows.length; i++) {
             const cells = rows[i].getElementsByTagName("td");
             let match = false;
-
             for (let j = 0; j < cells.length; j++) {
                 const text = cells[j].textContent || cells[j].innerText;
                 if (text.toLowerCase().indexOf(filter) > -1) {
@@ -76,38 +77,49 @@
                     break;
                 }
             }
-
             rows[i].style.display = match ? "" : "none";
         }
     }
 
-    // AJAX Scan Submit
-    document.getElementById('barcodeInput').addEventListener('input', function () {
-        const barcode = this.value.trim();
-        if (barcode.length >= 3) {
-            const action = document.getElementById('actionSelect').value;
+    // AJAX scan form submission
+    document.getElementById('scanForm').addEventListener('submit', function(e) {
+        e.preventDefault();
 
-            fetch('/scan_update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: `barcode=${encodeURIComponent(barcode)}&action=${encodeURIComponent(action)}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    console.log(`Quantity updated to: ${data.quantity}`);
-                } else {
-                    console.error('Error:', data.message);
-                    alert('Error: ' + data.message);
+        const barcode = document.getElementById('barcodeInput').value;
+        const action = document.getElementById('actionSelect').value;
+
+        fetch('/scan_update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `barcode=${encodeURIComponent(barcode)}&action=${encodeURIComponent(action)}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            const msgDiv = document.getElementById('scanMessage');
+            msgDiv.style.color = data.success ? 'green' : 'red';
+            msgDiv.innerText = data.message;
+
+            if (data.success) {
+                const row = document.querySelector(`tr[data-id='${data.item_id}']`);
+                if (row) {
+                    row.querySelector('.qty').innerText = data.new_qty;
                 }
-                document.getElementById('barcodeInput').value = '';
-            })
-            .catch(error => {
-                console.error('Request failed', error);
-                document.getElementById('barcodeInput').value = '';
-            });
+            }
+
+            document.getElementById('barcodeInput').value = '';
+            document.getElementById('barcodeInput').focus();
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            document.getElementById('scanMessage').style.color = 'red';
+            document.getElementById('scanMessage').innerText = 'Error processing request.';
+        });
+    });
+
+    // Auto-submit scan if barcode input hits threshold
+    document.getElementById('barcodeInput').addEventListener('input', function() {
+        if (this.value.length >= 3) {
+            document.getElementById('scanForm').dispatchEvent(new Event('submit'));
         }
     });
     </script>
