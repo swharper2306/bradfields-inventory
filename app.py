@@ -1,37 +1,41 @@
 from flask import Flask, render_template, request, redirect, jsonify
 import sqlite3
-import os
+from contextlib import contextmanager
 
 app = Flask(__name__)
 
-# DB init
-def init_db():
-    conn = sqlite3.connect('inventory.db')
-    c = conn.cursor()
+DATABASE = 'inventory.db'
 
-    c.execute('''CREATE TABLE IF NOT EXISTS inventory (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    item_name TEXT NOT NULL,
-                    location TEXT NOT NULL,
-                    quantity INTEGER NOT NULL DEFAULT 0,
-                    barcode TEXT
-                )''')
-
+@contextmanager
+def get_db_cursor(commit=False):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
     try:
-        c.execute("ALTER TABLE inventory ADD COLUMN barcode TEXT")
-    except sqlite3.OperationalError:
-        pass
+        yield cursor
+        if commit:
+            conn.commit()
+    finally:
+        conn.close()
 
-    conn.commit()
-    conn.close()
+def init_db():
+    with get_db_cursor(commit=True) as c:
+        c.execute('''CREATE TABLE IF NOT EXISTS inventory (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        item_name TEXT NOT NULL,
+                        location TEXT NOT NULL,
+                        quantity INTEGER NOT NULL DEFAULT 0,
+                        barcode TEXT
+                    )''')
+        try:
+            c.execute("ALTER TABLE inventory ADD COLUMN barcode TEXT")
+        except sqlite3.OperationalError:
+            pass
 
 @app.route('/')
 def index():
-    conn = sqlite3.connect('inventory.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM inventory")
-    items = c.fetchall()
-    conn.close()
+    with get_db_cursor() as c:
+        c.execute("SELECT * FROM inventory")
+        items = c.fetchall()
     return render_template('index.html', items=items)
 
 @app.route('/add', methods=['POST'])
@@ -41,45 +45,35 @@ def add_item():
     quantity = int(request.form['quantity'])
     barcode = request.form['barcode']
 
-    conn = sqlite3.connect('inventory.db')
-    c = conn.cursor()
-    c.execute("INSERT INTO inventory (item_name, location, quantity, barcode) VALUES (?, ?, ?, ?)", 
-              (name, location, quantity, barcode))
-    conn.commit()
-    conn.close()
+    with get_db_cursor(commit=True) as c:
+        c.execute("INSERT INTO inventory (item_name, location, quantity, barcode) VALUES (?, ?, ?, ?)",
+                  (name, location, quantity, barcode))
     return redirect('/')
 
 @app.route('/delete/<int:item_id>', methods=['POST'])
 def delete_item(item_id):
-    conn = sqlite3.connect('inventory.db')
-    c = conn.cursor()
-    c.execute("DELETE FROM inventory WHERE id = ?", (item_id,))
-    conn.commit()
-    conn.close()
+    with get_db_cursor(commit=True) as c:
+        c.execute("DELETE FROM inventory WHERE id = ?", (item_id,))
     return redirect('/')
 
 @app.route("/edit/<int:item_id>", methods=["GET", "POST"])
 def edit_item(item_id):
-    conn = sqlite3.connect("inventory.db")
-    cursor = conn.cursor()
-
     if request.method == "POST":
         item_name = request.form["item_name"]
         location = request.form["location"]
         quantity = int(request.form["quantity"])
         barcode = request.form["barcode"]
 
-        cursor.execute(
-            "UPDATE inventory SET item_name = ?, location = ?, quantity = ?, barcode = ? WHERE id = ?",
-            (item_name, location, quantity, barcode, item_id),
-        )
-        conn.commit()
-        conn.close()
+        with get_db_cursor(commit=True) as c:
+            c.execute(
+                "UPDATE inventory SET item_name = ?, location = ?, quantity = ?, barcode = ? WHERE id = ?",
+                (item_name, location, quantity, barcode, item_id),
+            )
         return redirect("/")
 
-    cursor.execute("SELECT * FROM inventory WHERE id = ?", (item_id,))
-    item = cursor.fetchone()
-    conn.close()
+    with get_db_cursor() as c:
+        c.execute("SELECT * FROM inventory WHERE id = ?", (item_id,))
+        item = c.fetchone()
     return render_template("edit.html", item=item)
 
 @app.route('/scan_update', methods=['POST'])
@@ -87,21 +81,17 @@ def scan_update():
     barcode = request.form['barcode']
     action = request.form['action']  # "add" or "subtract"
 
-    conn = sqlite3.connect('inventory.db')
-    c = conn.cursor()
-    c.execute("SELECT id, quantity FROM inventory WHERE barcode = ?", (barcode,))
-    result = c.fetchone()
+    with get_db_cursor(commit=True) as c:
+        c.execute("SELECT quantity FROM inventory WHERE barcode = ?", (barcode,))
+        result = c.fetchone()
 
-    if result:
-        item_id, current_qty = result
-        new_qty = current_qty + 1 if action == 'add' else max(current_qty - 1, 0)
-        c.execute("UPDATE inventory SET quantity = ? WHERE barcode = ?", (new_qty, barcode))
-        conn.commit()
-        conn.close()
-        return jsonify(success=True, message=f"{action.capitalize()} successful", item_id=item_id, new_qty=new_qty)
-    else:
-        conn.close()
-        return jsonify(success=False, message="Barcode not found.")
+        if result:
+            current_qty = result[0]
+            new_qty = current_qty + 1 if action == 'add' else max(current_qty - 1, 0)
+            c.execute("UPDATE inventory SET quantity = ? WHERE barcode = ?", (new_qty, barcode))
+            return jsonify({'status': 'success', 'quantity': new_qty})
+        else:
+            return jsonify({'status': 'error', 'message': 'Barcode not found'})
 
 if __name__ == '__main__':
     init_db()
