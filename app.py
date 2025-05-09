@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, jsonify
 import sqlite3
 import os
 
@@ -57,7 +57,7 @@ def delete_item(item_id):
     conn.commit()
     conn.close()
     return redirect('/')
-    
+
 @app.route("/edit/<int:item_id>", methods=["GET", "POST"])
 def edit_item(item_id):
     conn = sqlite3.connect("inventory.db")
@@ -77,6 +77,11 @@ def edit_item(item_id):
         conn.close()
         return redirect("/")
 
+    cursor.execute("SELECT * FROM inventory WHERE id = ?", (item_id,))
+    item = cursor.fetchone()
+    conn.close()
+    return render_template("edit.html", item=item)
+
 @app.route('/scan_update', methods=['POST'])
 def scan_update():
     barcode = request.form['barcode']
@@ -92,14 +97,11 @@ def scan_update():
         new_qty = current_qty + 1 if action == 'add' else max(current_qty - 1, 0)
         c.execute("UPDATE inventory SET quantity = ? WHERE barcode = ?", (new_qty, barcode))
         conn.commit()
-
-    conn.close()
-    return redirect('/')
-
-    cursor.execute("SELECT * FROM inventory WHERE id = ?", (item_id,))
-    item = cursor.fetchone()
-    conn.close()
-    return render_template("edit.html", item=item)
+        conn.close()
+        return jsonify({'status': 'success', 'quantity': new_qty})
+    else:
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Barcode not found'})
 
 if __name__ == '__main__':
     init_db()
