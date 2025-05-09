@@ -16,15 +16,15 @@
         <button type="submit">Add Item</button>
     </form>
 
-<h2>Quick Scan Update</h2>
-<form id="scanForm" action="/scan_update" method="POST">
-    <input type="text" name="barcode" id="barcodeInput" placeholder="Scan barcode here..." autofocus required>
-    <select name="action" id="actionSelect">
-        <option value="add">Add One</option>
-        <option value="subtract">Subtract One</option>
-    </select>
-    <button type="submit" style="display:none;">Submit</button>
-</form>
+    <h2>Quick Scan Update</h2>
+    <form id="scanForm" method="POST">
+        <input type="text" name="barcode" id="barcodeInput" placeholder="Scan barcode here..." autofocus required>
+        <select name="action" id="actionSelect">
+            <option value="add">Add One</option>
+            <option value="subtract">Subtract One</option>
+        </select>
+        <button type="submit" style="display:none;">Submit</button>
+    </form>
 
     <input type="text" id="searchInput" placeholder="Search inventory..." onkeyup="filterTable()" style="margin: 20px 0; padding: 8px; width: 300px;">
 
@@ -46,51 +46,70 @@
                 <td>{{ item[3] }}</td>
                 <td>{{ item[4] or '' }}</td>
                 <td>
-    <form action="/delete/{{ item[0] }}" method="post" style="display:inline;">
-        <button type="submit">Delete</button>
-    </form>
-    <form action="/edit/{{ item[0] }}" method="get" style="display:inline;">
-        <button type="submit">Edit</button>
-    </form>
-</td>
+                    <form action="/delete/{{ item[0] }}" method="post" style="display:inline;">
+                        <button type="submit">Delete</button>
+                    </form>
+                    <form action="/edit/{{ item[0] }}" method="get" style="display:inline;">
+                        <button type="submit">Edit</button>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
     <script>
-function filterTable() {
-    const input = document.getElementById("searchInput");
-    const filter = input.value.toLowerCase();
-    const table = document.getElementById("inventoryTable");
-    const rows = table.getElementsByTagName("tr");
+    function filterTable() {
+        const input = document.getElementById("searchInput");
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById("inventoryTable");
+        const rows = table.getElementsByTagName("tr");
 
-    for (let i = 1; i < rows.length; i++) {
-        const cells = rows[i].getElementsByTagName("td");
-        let match = false;
+        for (let i = 1; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName("td");
+            let match = false;
 
-        for (let j = 0; j < cells.length; j++) {
-            const text = cells[j].textContent || cells[j].innerText;
-            if (text.toLowerCase().indexOf(filter) > -1) {
-                match = true;
-                break;
+            for (let j = 0; j < cells.length; j++) {
+                const text = cells[j].textContent || cells[j].innerText;
+                if (text.toLowerCase().indexOf(filter) > -1) {
+                    match = true;
+                    break;
+                }
             }
+
+            rows[i].style.display = match ? "" : "none";
         }
-
-        rows[i].style.display = match ? "" : "none";
     }
-}
 
-// Auto-submit the scan form when barcode input is filled
-document.getElementById('barcodeInput').addEventListener('input', function(e) {
-    if (this.value.length >= 3) {  // Adjust based on your barcode length
-        const form = document.getElementById('scanForm');
-        setTimeout(() => {
-            this.value = ''; // Clear the input just before submitting
-            form.submit();
-        }, 100); // Delay ensures full barcode is captured before submit
-    }
-});
-</script>
+    // AJAX Scan Submit
+    document.getElementById('barcodeInput').addEventListener('input', function () {
+        const barcode = this.value.trim();
+        if (barcode.length >= 3) {
+            const action = document.getElementById('actionSelect').value;
+
+            fetch('/scan_update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `barcode=${encodeURIComponent(barcode)}&action=${encodeURIComponent(action)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log(`Quantity updated to: ${data.quantity}`);
+                } else {
+                    console.error('Error:', data.message);
+                    alert('Error: ' + data.message);
+                }
+                document.getElementById('barcodeInput').value = '';
+            })
+            .catch(error => {
+                console.error('Request failed', error);
+                document.getElementById('barcodeInput').value = '';
+            });
+        }
+    });
+    </script>
 </body>
 </html>
