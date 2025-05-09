@@ -78,8 +78,9 @@ def edit_item(item_id):
 
 @app.route('/scan_update', methods=['POST'])
 def scan_update():
-    barcode = request.form['barcode'].strip()  # <-- Normalize input
-    action = request.form['action']
+    data = request.get_json()
+    barcode = data.get('barcode', '').strip()  # Ensure trailing whitespace is removed
+    action = data.get('action')  # "add" or "subtract"
 
     conn = get_db_connection()
     c = conn.cursor()
@@ -87,7 +88,7 @@ def scan_update():
     result = c.fetchone()
 
     if result:
-        current_qty = result['quantity']
+        current_qty = result[0]
         new_qty = current_qty + 1 if action == 'add' else max(current_qty - 1, 0)
         c.execute("UPDATE inventory SET quantity = ? WHERE barcode = ?", (new_qty, barcode))
         conn.commit()
@@ -95,9 +96,8 @@ def scan_update():
         return jsonify({'status': 'success', 'quantity': new_qty})
     else:
         conn.close()
-        return jsonify({'status': 'error', 'message': f'Barcode not found: {barcode}'})
-
-
+        return jsonify({'status': 'error', 'message': 'Barcode not found'})
+        
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
