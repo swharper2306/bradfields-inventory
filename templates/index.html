@@ -2,152 +2,125 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bradfields Inventory</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>Inventory System</title>
     <style>
-        #messageBox {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-            display: none;
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 8px;
         }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
-        .highlight { background-color: yellow; transition: background-color 1s ease; }
-        th { cursor: pointer; }
+
+        .message {
+            margin-top: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>Bradfields Inventory System</h1>
+    <h1>Inventory System</h1>
 
-    <form action="/add" method="post">
+    <form action="/add" method="POST">
         <input type="text" name="item_name" placeholder="Item Name" required>
         <input type="text" name="location" placeholder="Location" required>
-        <input type="number" name="quantity" placeholder="Qty" required min="1">
-        <input type="text" name="barcode" placeholder="Barcode (Scan or Type)" required>
+        <input type="number" name="quantity" placeholder="Quantity" required>
+        <input type="text" name="barcode" placeholder="Barcode (optional)">
         <button type="submit">Add Item</button>
     </form>
 
-    <h2>Quick Scan Update</h2>
-    <form id="scanForm">
-        <input type="text" name="barcode" id="barcodeInput" placeholder="Scan barcode here..." autofocus required>
-        <select name="action" id="actionSelect">
-            <option value="add">Add One</option>
-            <option value="subtract">Subtract One</option>
-        </select>
-        <button type="submit" style="display:none;">Submit</button>
-    </form>
+    <h2>Scan Inventory</h2>
+    <label for="barcodeInput">Scan barcode here:</label>
+    <input type="text" id="barcodeInput" placeholder="Scan barcode here" autofocus>
+    <select id="actionSelect">
+        <option value="add">Add One</option>
+        <option value="subtract">Subtract One</option>
+    </select>
+    <div id="scanMessage" class="message"></div>
 
-    <div id="messageBox"></div>
-
-    <input type="text" id="searchInput" placeholder="Search inventory..." onkeyup="filterTable()" style="margin: 20px 0; padding: 8px; width: 300px;">
-
+    <h2>Inventory</h2>
     <table id="inventoryTable">
         <thead>
             <tr>
-                <th onclick="sortTable(0)">Item Name</th>
-                <th onclick="sortTable(1)">Location</th>
-                <th onclick="sortTable(2)">Quantity</th>
-                <th onclick="sortTable(3)">Barcode</th>
-                <th>Action</th>
+                <th>ID</th>
+                <th>Item Name</th>
+                <th>Location</th>
+                <th>Quantity</th>
+                <th>Barcode</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for item in items %}
-            <tr data-barcode="{{ item[4] }}">
+            <tr>
+                <td>{{ item[0] }}</td>
                 <td>{{ item[1] }}</td>
                 <td>{{ item[2] }}</td>
-                <td class="quantity-cell">{{ item[3] }}</td>
-                <td>{{ item[4] or '' }}</td>
+                <td>{{ item[3] }}</td>
+                <td>{{ item[4] }}</td>
                 <td>
-                    <form action="/delete/{{ item[0] }}" method="post" style="display:inline;">
+                    <form action="/delete/{{ item[0] }}" method="POST" style="display:inline;">
                         <button type="submit">Delete</button>
                     </form>
-                    <form action="/edit/{{ item[0] }}" method="get" style="display:inline;">
-                        <button type="submit">Edit</button>
-                    </form>
+                    <a href="/edit/{{ item[0] }}">Edit</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-<script>
-// Search filter
-function filterTable() {
-    const filter = document.getElementById("searchInput").value.toLowerCase();
-    const rows = document.querySelectorAll("#inventoryTable tbody tr");
-    rows.forEach(row => {
-        row.style.display = [...row.cells].some(td => td.textContent.toLowerCase().includes(filter)) ? "" : "none";
-    });
-}
+    <script>
+    document.getElementById('barcodeInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
 
-// Sort table columns
-let sortDirection = true;
-function sortTable(colIndex) {
-    const table = document.getElementById("inventoryTable");
-    const tbody = table.tBodies[0];
-    const rows = Array.from(tbody.querySelectorAll("tr"));
+            const barcodeRaw = this.value;
+            const barcode = barcodeRaw.trim();
+            const action = document.getElementById('actionSelect').value;
+            const messageDiv = document.getElementById('scanMessage');
 
-    rows.sort((a, b) => {
-        const aText = a.cells[colIndex].textContent.trim().toLowerCase();
-        const bText = b.cells[colIndex].textContent.trim().toLowerCase();
-        const aVal = isNaN(aText) ? aText : parseFloat(aText);
-        const bVal = isNaN(bText) ? bText : parseFloat(bText);
+            if (barcode.length >= 3) {
+                fetch('/scan_update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ barcode, action })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        messageDiv.textContent = `Quantity updated to ${data.quantity}`;
+                        messageDiv.style.color = 'green';
+                        updateInventoryTable(); // Refresh the table if auto-updating is enabled
+                    } else {
+                        messageDiv.textContent = data.message;
+                        messageDiv.style.color = 'red';
+                    }
 
-        return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * (sortDirection ? 1 : -1);
-    });
+                    setTimeout(() => {
+                        messageDiv.textContent = '';
+                    }, 2000);
 
-    sortDirection = !sortDirection;
-    rows.forEach(row => tbody.appendChild(row));
-}
-
-// Show flash messages
-function showMessage(message, isSuccess = true) {
-    const box = document.getElementById("messageBox");
-    box.textContent = message;
-    box.className = isSuccess ? "success" : "error";
-    box.style.display = "block";
-    setTimeout(() => box.style.display = "none", 2500);
-}
-
-// AJAX scan form
-document.getElementById("scanForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const barcode = document.getElementById("barcodeInput").value;
-    const action = document.getElementById("actionSelect").value;
-
-    fetch("/scan_update", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `barcode=${encodeURIComponent(barcode)}&action=${encodeURIComponent(action)}`
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === "success") {
-            const row = document.querySelector(`tr[data-barcode="${barcode}"]`);
-            if (row) {
-                const qtyCell = row.querySelector(".quantity-cell");
-                qtyCell.textContent = data.quantity;
-                row.classList.add("highlight");
-                setTimeout(() => row.classList.remove("highlight"), 1500);
+                    this.value = '';
+                })
+                .catch(err => {
+                    messageDiv.textContent = 'Error communicating with server';
+                    messageDiv.style.color = 'red';
+                });
             }
-            showMessage(`Quantity ${action}ed. New quantity: ${data.quantity}`, true);
-        } else {
-            showMessage(data.message, false);
         }
-    })
-    .catch(() => showMessage("Error communicating with server.", false));
+    });
 
-    document.getElementById("barcodeInput").value = "";
-});
-
-// Auto-submit on scan input
-document.getElementById("barcodeInput").addEventListener("input", function () {
-    if (this.value.length >= 3) {
-        document.getElementById("scanForm").dispatchEvent(new Event("submit"));
+    // Optional: Add this if you're using live table updates
+    function updateInventoryTable() {
+        fetch('/')
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newTbody = doc.querySelector('#inventoryTable tbody');
+                document.querySelector('#inventoryTable tbody').innerHTML = newTbody.innerHTML;
+            });
     }
-});
-</script>
+    </script>
 </body>
 </html>
