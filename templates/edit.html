@@ -4,19 +4,48 @@
     <meta charset="UTF-8">
     <title>Edit Item</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        form input {
+            display: block;
+            margin-bottom: 10px;
+            padding: 8px;
+            width: 300px;
+        }
+
+        button {
+            padding: 8px 16px;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1>Edit Inventory Item</h1>
 
     <form action="/edit/{{ item[0] }}" method="post">
+        <label>Item Name</label>
         <input type="text" name="item_name" value="{{ item[1] }}" required>
+
+        <label>Location</label>
         <input type="text" name="location" value="{{ item[2] }}" required>
+
+        <label>Quantity</label>
         <input type="number" name="quantity" value="{{ item[3] }}" required min="0">
-        <input type="text" name="barcode" value="{{ item[4] }}" required>
+
+        <label>Barcode</label>
+        <input type="text" name="barcode" value="{{ item[4] or '' }}">
+
         <button type="submit">Update Item</button>
     </form>
 
-    <br>
     <a href="/">← Back to Inventory</a>
 </body>
 </html>
